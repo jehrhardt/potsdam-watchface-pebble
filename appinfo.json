@@ -1,18 +1,18 @@
 {
-  "uuid": "1d826b57-a6a7-4b75-9e9f-f6c6c2890c76",
-  "shortName": "Potsdam",
-  "longName": "Potsdam",
-  "companyName": "Jan Ehrhardt",
-  "versionLabel": "1.0",
-  "sdkVersion": "3",
-  "targetPlatforms": ["basalt"],
-  "watchapp": {
-    "watchface": true
-  },
-  "appKeys": {
-    "dummy": 0
-  },
-  "resources": {
-    "media": []
-  }
+    "uuid": "1d826b57-a6a7-4b75-9e9f-f6c6c2890c76",
+    "shortName": "Potsdam",
+    "longName": "Potsdam",
+    "companyName": "Jan Ehrhardt",
+    "versionLabel": "1.0",
+    "sdkVersion": "3",
+    "targetPlatforms": ["basalt"],
+    "watchapp": {
+        "watchface": true
+    },
+    "appKeys": {
+        "dummy": 0
+    },
+    "resources": {
+        "media": []
+    }
 }
