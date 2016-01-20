@@ -47,11 +47,25 @@ static void update_time_layer(Layer *layer, GContext *ctx) {
     gpath_draw_filled(ctx, second_handle);
 }
 
-static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
-    gpath_rotate_to(hour_handle, (TRIG_MAX_ANGLE * (((tick_time->tm_hour % 12) * 6) + (tick_time->tm_min / 10))) / (12 * 6));
-    gpath_rotate_to(minute_handle, TRIG_MAX_ANGLE * tick_time->tm_min / 60);
-    gpath_rotate_to(second_handle, TRIG_MAX_ANGLE * tick_time->tm_sec / 60);
+static void update_handle_position(struct tm *t) {
+    // analog watch does not show 24 hours
+    int32_t hour = t->tm_hour % 12;
 
+    // 12 hours have 720 minutes ⇒ 720 possible positions for hour handle
+    int32_t hour_angle = TRIG_MAX_ANGLE * (hour * 60 + t->tm_min) / 720;
+    gpath_rotate_to(hour_handle, hour_angle);
+
+    // 60 possible positions for the minute handle
+    int32_t minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
+    gpath_rotate_to(minute_handle, minute_angle);
+
+    // 60 possible positions for the second handle
+    int32_t second_angle = TRIG_MAX_ANGLE * t->tm_sec / 60;
+    gpath_rotate_to(second_handle, second_angle);
+}
+
+static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
+    update_handle_position(tick_time);
     layer_mark_dirty(time_layer);
 }
 
@@ -92,6 +106,10 @@ static void init(void) {
 
     second_handle = gpath_create(&SECOND_HANDLE_INFO);
     gpath_move_to(second_handle, center);
+
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    update_handle_position(current_time);
 
     tick_timer_service_subscribe(SECOND_UNIT, timer_tick);
 }
