@@ -38,7 +38,7 @@ static Layer *time_layer;
 
 static Window *window;
 
-static void update_time(Layer *layer, GContext *ctx) {
+static void update_time_layer(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, GColorPastelYellow);
     gpath_draw_filled(ctx, hour_handle);
     gpath_draw_filled(ctx, minute_handle);
@@ -57,7 +57,7 @@ static void window_load(Window *window) {
     GRect bounds = layer_get_bounds(window_layer);
 
     time_layer = layer_create(bounds);
-    layer_set_update_proc(time_layer, update_time);
+    layer_set_update_proc(time_layer, update_time_layer);
     layer_add_child(window_layer, time_layer);
 }
 
