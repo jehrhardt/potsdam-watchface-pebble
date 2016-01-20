@@ -48,6 +48,11 @@ static void update_time_layer(Layer *layer, GContext *ctx) {
 }
 
 static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
+    gpath_rotate_to(hour_handle, (TRIG_MAX_ANGLE * (((tick_time->tm_hour % 12) * 6) + (tick_time->tm_min / 10))) / (12 * 6));
+    gpath_rotate_to(minute_handle, TRIG_MAX_ANGLE * tick_time->tm_min / 60);
+    gpath_rotate_to(second_handle, TRIG_MAX_ANGLE * tick_time->tm_sec / 60);
+
+    layer_mark_dirty(time_layer);
 }
 
 static void window_load(Window *window) {
