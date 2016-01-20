@@ -1,50 +1,41 @@
 #include <pebble.h>
 
-static const GPathInfo HOUR_HANDLE_INFO = {
-    .num_points = 4,
-    .points = (GPoint []) {
-        {-4, 0},
-        {-4, -40},
-        {4, -40},
-        {4, 0}
-    }
-};
-
-static const GPathInfo MINUTE_HANDLE_INFO = {
-    .num_points = 4,
-    .points = (GPoint []) {
-        {-3, 0},
-        {-3, -60},
-        {3, -60},
-        {3, 0}
-    }
-};
-
-static const GPathInfo SECOND_HANDLE_INFO = {
-    .num_points = 4,
-    .points = (GPoint []) {
-        {-2, 0},
-        {-2, -60},
-        {2, -60},
-        {2, 0}
-    }
-};
-
-static GPath *hour_handle;
-static GPath *minute_handle;
-static GPath *second_handle;
+int32_t hour_angle;
+int32_t minute_angle;
+int32_t second_angle;
 
 static Layer *time_layer;
 
 static Window *window;
 
 static void update_time_layer(Layer *layer, GContext *ctx) {
-    graphics_context_set_fill_color(ctx, GColorPastelYellow);
-    gpath_draw_filled(ctx, hour_handle);
-    gpath_draw_filled(ctx, minute_handle);
+    GRect bounds = layer_get_bounds(layer);
+    GPoint center = grect_center_point(&bounds);
 
-    graphics_context_set_fill_color(ctx, GColorLimerick);
-    gpath_draw_filled(ctx, second_handle);
+    GPoint hour_hand = {
+        .x = (sin_lookup(hour_angle) * 40 / TRIG_MAX_RATIO) + center.x,
+        .y = (-cos_lookup(hour_angle) * 40 / TRIG_MAX_RATIO) + center.y
+    };
+
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_stroke_width(ctx, 6);
+    graphics_draw_line(ctx, hour_hand, center);
+
+    GPoint minute_hand = {
+        .x = (sin_lookup(minute_angle) * 60 / TRIG_MAX_RATIO) + center.x,
+        .y = (-cos_lookup(minute_angle) * 60 / TRIG_MAX_RATIO) + center.y
+    };
+
+    graphics_context_set_stroke_width(ctx, 4);
+    graphics_draw_line(ctx, minute_hand, center);
+
+    GPoint second_hand = {
+        .x = (sin_lookup(second_angle) * 65 / TRIG_MAX_RATIO) + center.x,
+        .y = (-cos_lookup(second_angle) * 65 / TRIG_MAX_RATIO) + center.y
+    };
+
+    graphics_context_set_fill_color(ctx, GColorRed);
+    graphics_fill_circle(ctx, second_hand, 4);
 }
 
 static void update_handle_position(struct tm *t) {
@@ -52,16 +43,13 @@ static void update_handle_position(struct tm *t) {
     int32_t hour = t->tm_hour % 12;
 
     // 12 hours have 720 minutes ⇒ 720 possible positions for hour handle
-    int32_t hour_angle = TRIG_MAX_ANGLE * (hour * 60 + t->tm_min) / 720;
-    gpath_rotate_to(hour_handle, hour_angle);
+    hour_angle = TRIG_MAX_ANGLE * (hour * 60 + t->tm_min) / 720;
 
     // 60 possible positions for the minute handle
-    int32_t minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
-    gpath_rotate_to(minute_handle, minute_angle);
+    minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
 
     // 60 possible positions for the second handle
-    int32_t second_angle = TRIG_MAX_ANGLE * t->tm_sec / 60;
-    gpath_rotate_to(second_handle, second_angle);
+    second_angle = TRIG_MAX_ANGLE * t->tm_sec / 60;
 }
 
 static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
@@ -70,7 +58,7 @@ static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void window_load(Window *window) {
-    window_set_background_color(window, GColorDarkCandyAppleRed);
+    window_set_background_color(window, GColorBlack);
 
     Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
@@ -94,19 +82,6 @@ static void init(void) {
 
     window_stack_push(window, true);
 
-    Layer *window_layer = window_get_root_layer(window);
-    GRect bounds = layer_get_bounds(window_layer);
-    GPoint center = grect_center_point(&bounds);
-
-    hour_handle = gpath_create(&HOUR_HANDLE_INFO);
-    gpath_move_to(hour_handle, center);
-
-    minute_handle = gpath_create(&MINUTE_HANDLE_INFO);
-    gpath_move_to(minute_handle, center);
-
-    second_handle = gpath_create(&SECOND_HANDLE_INFO);
-    gpath_move_to(second_handle, center);
-
     time_t now = time(NULL);
     struct tm *current_time = localtime(&now);
     update_handle_position(current_time);
@@ -116,10 +91,6 @@ static void init(void) {
 
 static void deinit(void) {
     tick_timer_service_unsubscribe();
-
-    gpath_destroy(hour_handle);
-    gpath_destroy(minute_handle);
-    gpath_destroy(second_handle);
 
     window_destroy(window);
 }
