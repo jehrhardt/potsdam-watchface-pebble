@@ -5,37 +5,55 @@ int32_t minute_angle;
 int32_t second_angle;
 
 static Layer *time_layer;
+static Layer *background_layer;
 
 static Window *window;
 
-static void update_time_layer(Layer *layer, GContext *ctx) {
+static GPoint position(int32_t angle, int32_t length, GPoint shift) {
+    return (GPoint) {
+        .x = (sin_lookup(angle) * length / TRIG_MAX_RATIO) + shift.x,
+        .y = (-cos_lookup(angle) * length / TRIG_MAX_RATIO) + shift.y
+    };
+}
+
+static void draw_time_layer(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
     GPoint center = grect_center_point(&bounds);
 
-    GPoint hour_hand = {
-        .x = (sin_lookup(hour_angle) * 40 / TRIG_MAX_RATIO) + center.x,
-        .y = (-cos_lookup(hour_angle) * 40 / TRIG_MAX_RATIO) + center.y
-    };
+    GPoint hour_hand = position(hour_angle, 40, center);
 
     graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_stroke_width(ctx, 6);
     graphics_draw_line(ctx, hour_hand, center);
 
-    GPoint minute_hand = {
-        .x = (sin_lookup(minute_angle) * 60 / TRIG_MAX_RATIO) + center.x,
-        .y = (-cos_lookup(minute_angle) * 60 / TRIG_MAX_RATIO) + center.y
-    };
+    GPoint minute_hand = position(minute_angle, 55, center);
 
     graphics_context_set_stroke_width(ctx, 4);
     graphics_draw_line(ctx, minute_hand, center);
 
-    GPoint second_hand = {
-        .x = (sin_lookup(second_angle) * 65 / TRIG_MAX_RATIO) + center.x,
-        .y = (-cos_lookup(second_angle) * 65 / TRIG_MAX_RATIO) + center.y
-    };
+    GPoint second_hand = position(second_angle, bounds.size.w / 2 - 5, center);
 
     graphics_context_set_fill_color(ctx, GColorRed);
     graphics_fill_circle(ctx, second_hand, 4);
+}
+
+static void draw_background_layer(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    GPoint center = grect_center_point(&bounds);
+
+    graphics_context_set_fill_color(ctx, GColorWhite);
+    graphics_context_set_stroke_width(ctx, 1);
+
+    for (int i = 0; i < 60; ++i) {
+        const int32_t angle = TRIG_MAX_ANGLE * i / 60;
+        const GPoint point = position(angle, bounds.size.w / 2 - 5, center);
+
+        if(i % 5 == 0) {
+            graphics_fill_circle(ctx, point, 2);
+        } else {
+            graphics_fill_circle(ctx, point, 1);
+        }
+    }
 }
 
 static void update_handle_position(struct tm *t) {
@@ -63,13 +81,18 @@ static void window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
     GRect bounds = layer_get_bounds(window_layer);
 
+    background_layer = layer_create(bounds);
+    layer_set_update_proc(background_layer, draw_background_layer);
+    layer_add_child(window_layer, background_layer);
+
     time_layer = layer_create(bounds);
-    layer_set_update_proc(time_layer, update_time_layer);
+    layer_set_update_proc(time_layer, draw_time_layer);
     layer_add_child(window_layer, time_layer);
 }
 
 static void window_unload(Window *window) {
     layer_destroy(time_layer);
+    layer_destroy(background_layer);
 }
 
 static void init(void) {
