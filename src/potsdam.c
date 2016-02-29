@@ -20,13 +20,13 @@ static void draw_time_layer(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
     GPoint center = grect_center_point(&bounds);
 
-    GPoint hour_hand = position(hour_angle, 40, center);
+    GPoint hour_hand = position(hour_angle, 45, center);
 
     graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_stroke_width(ctx, 6);
     graphics_draw_line(ctx, hour_hand, center);
 
-    GPoint minute_hand = position(minute_angle, 55, center);
+    GPoint minute_hand = position(minute_angle, 65, center);
 
     graphics_context_set_stroke_width(ctx, 4);
     graphics_draw_line(ctx, minute_hand, center);
