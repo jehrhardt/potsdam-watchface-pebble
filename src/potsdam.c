@@ -1,4 +1,7 @@
 #include <pebble.h>
+#include "potsdam.h"
+
+static GPath *ticks[NUM_TICKS];
 
 static int32_t hour_angle;
 static int32_t minute_angle;
@@ -33,21 +36,11 @@ static void draw_time_layer(Layer *layer, GContext *ctx) {
 }
 
 static void draw_background_layer(Layer *layer, GContext *ctx) {
-    GRect bounds = layer_get_bounds(layer);
-    GPoint center = grect_center_point(&bounds);
-
-    graphics_context_set_fill_color(ctx, GColorWhite);
+    graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_stroke_width(ctx, 1);
 
-    for (int i = 0; i < 60; ++i) {
-        const int32_t angle = TRIG_MAX_ANGLE * i / 60;
-        const GPoint point = position(angle, bounds.size.w / 2 - 5, center);
-
-        if(i % 5 == 0) {
-            graphics_fill_circle(ctx, point, 2);
-        } else {
-            graphics_fill_circle(ctx, point, 1);
-        }
+    for (int i = 0; i < NUM_TICKS; ++i) {
+        gpath_draw_outline(ctx, ticks[i]);
     }
 }
 
@@ -101,11 +94,19 @@ static void init(void) {
     struct tm *current_time = localtime(&now);
     update_handle_position(current_time);
 
+    for (int i = 0; i < NUM_TICKS; ++i) {
+        ticks[i] = gpath_create(&BACKGROUND_TICKS[i]);
+    }
+
     tick_timer_service_subscribe(MINUTE_UNIT, timer_tick);
 }
 
 static void deinit(void) {
     tick_timer_service_unsubscribe();
+
+    for(int i = 0; i < NUM_TICKS; ++i) {
+        gpath_destroy(ticks[i]);
+    }
 
     window_destroy(window);
 }
