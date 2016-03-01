@@ -33,6 +33,9 @@ static void draw_time_layer(Layer *layer, GContext *ctx) {
 
     graphics_context_set_stroke_width(ctx, 4);
     graphics_draw_line(ctx, minute_hand, center);
+
+    graphics_context_set_fill_color(ctx, GColorRed);
+    graphics_fill_circle(ctx, center, 5);
 }
 
 static void draw_background_layer(Layer *layer, GContext *ctx) {
