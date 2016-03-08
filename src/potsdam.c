@@ -8,6 +8,7 @@ static int32_t minute_angle;
 static int32_t second_angle;
 
 static Layer *time_layer;
+static TextLayer *date_layer;
 static Layer *background_layer;
 
 static Window *window;
@@ -39,7 +40,7 @@ static void draw_time_layer(Layer *layer, GContext *ctx) {
 }
 
 static void draw_background_layer(Layer *layer, GContext *ctx) {
-    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_stroke_color(ctx, GColorLiberty);
     graphics_context_set_stroke_width(ctx, 1);
 
     for (int i = 0; i < NUM_TICKS; ++i) {
@@ -58,9 +59,19 @@ static void update_handle_position(struct tm *t) {
     minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
 }
 
-static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
+static void time_tick(struct tm *tick_time, TimeUnits units_changed) {
     update_handle_position(tick_time);
     layer_mark_dirty(time_layer);
+}
+
+static void update_date(struct tm *t) {
+    static char date_buffer[6];
+    strftime(date_buffer, sizeof(date_buffer), "%a %e", t);
+    text_layer_set_text(date_layer, date_buffer);
+}
+
+static void date_tick(struct tm *tick_time, TimeUnits units_changed) {
+    update_date(tick_time);
 }
 
 static void window_load(Window *window) {
@@ -73,17 +84,32 @@ static void window_load(Window *window) {
     layer_set_update_proc(background_layer, draw_background_layer);
     layer_add_child(window_layer, background_layer);
 
+    date_layer = text_layer_create(GRect(0, 125, bounds.size.w, 35));
+    text_layer_set_background_color(date_layer, GColorClear);
+    text_layer_set_text_color(date_layer, GColorLiberty);
+    GFont date_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+    text_layer_set_font(date_layer, date_font);
+    text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
+    layer_add_child(window_layer, text_layer_get_layer(date_layer));
+
     time_layer = layer_create(bounds);
     layer_set_update_proc(time_layer, draw_time_layer);
     layer_add_child(window_layer, time_layer);
+
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    update_handle_position(current_time);
+    update_date(current_time);
 }
 
 static void window_unload(Window *window) {
     layer_destroy(time_layer);
     layer_destroy(background_layer);
+    text_layer_destroy(date_layer);
 }
 
 static void init(void) {
+    setlocale(LC_ALL, "");
     window = window_create();
 
     window_set_window_handlers(window, (WindowHandlers) {
@@ -93,15 +119,12 @@ static void init(void) {
 
     window_stack_push(window, true);
 
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    update_handle_position(current_time);
-
     for (int i = 0; i < NUM_TICKS; ++i) {
         ticks[i] = gpath_create(&BACKGROUND_TICKS[i]);
     }
 
-    tick_timer_service_subscribe(MINUTE_UNIT, timer_tick);
+    tick_timer_service_subscribe(MINUTE_UNIT, time_tick);
+    tick_timer_service_subscribe(DAY_UNIT, date_tick);
 }
 
 static void deinit(void) {
