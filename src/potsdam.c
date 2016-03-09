@@ -49,14 +49,12 @@ static void draw_background_layer(Layer *layer, GContext *ctx) {
 }
 
 static void update_handle_position(struct tm *t) {
-    // analog watch does not show 24 hours
-    int32_t hour = t->tm_hour % 12;
+    int32_t hour = t->tm_hour % (HOURS_PER_DAY / 2);
 
-    // 12 hours have 720 minutes ⇒ 720 possible positions for hour handle
-    hour_angle = TRIG_MAX_ANGLE * (hour * 60 + t->tm_min) / 720;
+    hour_angle = TRIG_MAX_ANGLE * (hour * MINUTES_PER_HOUR + t->tm_min)
+        / (MINUTES_PER_DAY / 2);
 
-    // 60 possible positions for the minute handle
-    minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
+    minute_angle = TRIG_MAX_ANGLE * t->tm_min / MINUTES_PER_HOUR;
 }
 
 static void update_date(struct tm *t) {
