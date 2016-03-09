@@ -59,19 +59,16 @@ static void update_handle_position(struct tm *t) {
     minute_angle = TRIG_MAX_ANGLE * t->tm_min / 60;
 }
 
-static void time_tick(struct tm *tick_time, TimeUnits units_changed) {
-    update_handle_position(tick_time);
-    layer_mark_dirty(time_layer);
-}
-
 static void update_date(struct tm *t) {
     static char date_buffer[6];
     strftime(date_buffer, sizeof(date_buffer), "%a %e", t);
     text_layer_set_text(date_layer, date_buffer);
 }
 
-static void date_tick(struct tm *tick_time, TimeUnits units_changed) {
+static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
+    update_handle_position(tick_time);
     update_date(tick_time);
+    layer_mark_dirty(time_layer);
 }
 
 static void window_load(Window *window) {
@@ -123,8 +120,7 @@ static void init(void) {
         ticks[i] = gpath_create(&BACKGROUND_TICKS[i]);
     }
 
-    tick_timer_service_subscribe(MINUTE_UNIT, time_tick);
-    tick_timer_service_subscribe(DAY_UNIT, date_tick);
+    tick_timer_service_subscribe(MINUTE_UNIT, timer_tick);
 }
 
 static void deinit(void) {
