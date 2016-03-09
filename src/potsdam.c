@@ -7,6 +7,8 @@ static int32_t hour_angle;
 static int32_t minute_angle;
 static int32_t second_angle;
 
+static char date_buffer[6];
+
 static Layer *time_layer;
 static TextLayer *date_layer;
 static Layer *background_layer;
@@ -58,14 +60,20 @@ static void update_handle_position(struct tm *t) {
 }
 
 static void update_date(struct tm *t) {
-    static char date_buffer[6];
     strftime(date_buffer, sizeof(date_buffer), "%a %e", t);
-    text_layer_set_text(date_layer, date_buffer);
 }
 
 static void timer_tick(struct tm *tick_time, TimeUnits units_changed) {
     update_handle_position(tick_time);
-    update_date(tick_time);
+
+    if ((units_changed & DAY_UNIT) == DAY_UNIT) {
+        update_date(tick_time);
+
+        if (date_layer) {
+            text_layer_set_text(date_layer, date_buffer);
+        }
+    }
+
     layer_mark_dirty(time_layer);
 }
 
@@ -85,16 +93,12 @@ static void window_load(Window *window) {
     GFont date_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
     text_layer_set_font(date_layer, date_font);
     text_layer_set_text_alignment(date_layer, GTextAlignmentCenter);
+    text_layer_set_text(date_layer, date_buffer);
     layer_add_child(window_layer, text_layer_get_layer(date_layer));
 
     time_layer = layer_create(bounds);
     layer_set_update_proc(time_layer, draw_time_layer);
     layer_add_child(window_layer, time_layer);
-
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    update_handle_position(current_time);
-    update_date(current_time);
 }
 
 static void window_unload(Window *window) {
@@ -117,6 +121,11 @@ static void init(void) {
     for (int i = 0; i < NUM_TICKS; ++i) {
         ticks[i] = gpath_create(&BACKGROUND_TICKS[i]);
     }
+
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    update_handle_position(current_time);
+    update_date(current_time);
 
     tick_timer_service_subscribe(MINUTE_UNIT, timer_tick);
 }
