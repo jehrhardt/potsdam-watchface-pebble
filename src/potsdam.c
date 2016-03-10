@@ -6,7 +6,7 @@ static GPath *ticks[NUM_TICKS];
 static int32_t hour_angle;
 static int32_t minute_angle;
 
-static char date_buffer[6];
+static char date_buffer[8];
 
 static Layer *time_layer;
 static TextLayer *date_layer;
