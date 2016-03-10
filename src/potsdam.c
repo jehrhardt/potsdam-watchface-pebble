@@ -5,7 +5,6 @@ static GPath *ticks[NUM_TICKS];
 
 static int32_t hour_angle;
 static int32_t minute_angle;
-static int32_t second_angle;
 
 static char date_buffer[6];
 
