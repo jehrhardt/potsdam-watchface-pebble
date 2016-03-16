@@ -1,2 +1,2 @@
 # potsdam-watchface-pebble
-An analog watchface for Pebble Time
+An analog watchface for Pebble Time.
